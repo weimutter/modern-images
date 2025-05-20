@@ -4,5 +4,4 @@ https://1keji.net/
 欢迎提出宝贵意见。
 
 视频教程：
-一键配置环境以上都装过了，如果想要自己手动安装，需要安装以下几个：
-（nodejs npm pm2）
+https://youtu.be/1nlfZtQTUL8
