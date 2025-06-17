@@ -1313,7 +1313,7 @@ a:hover {
   
   .view-options {
     flex-wrap: wrap;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
   }
 }
 
@@ -1365,6 +1365,7 @@ a:hover {
   border-radius: var(--border-radius);
   cursor: pointer;
   font-weight: 500;
+  color: var(--text-color);
   transition: all 0.3s ease;
   text-align: center;
   height: 100%;
@@ -1373,6 +1374,7 @@ a:hover {
 
 .format-radio-group .radio-item:hover label {
   border-color: var(--primary-color);
+  color: var(--text-color);
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(var(--primary-color-rgb), 0.2);
 }
@@ -1449,5 +1451,329 @@ a:hover {
   .view-options {
     flex-wrap: wrap;
     gap: var(--spacing-sm);
+  }
+}
+
+/* 手机端复制按钮样式 */
+.mobile-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  z-index: 10;
+  /* 默认在桌面端隐藏 */
+  display: none;
+}
+
+.mobile-copy-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.mobile-copy-btn:active {
+  background: var(--primary-color);
+  transform: scale(0.95);
+}
+
+.mobile-copy-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 只在手机端显示复制按钮 */
+@media (max-width: 768px) {
+  .mobile-copy-btn {
+    display: flex !important;
+  }
+}
+
+/* 手机端复制菜单样式 */
+.mobile-copy-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  /* 添加触摸优化 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.mobile-copy-menu.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-copy-menu.closing {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.mobile-copy-menu-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.mobile-copy-menu-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-color);
+  border-radius: 20px 20px 0 0;
+  max-height: 80vh;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  /* 添加滑动提示 */
+}
+
+.mobile-copy-menu-content::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  opacity: 0.3;
+}
+
+.mobile-copy-menu.show .mobile-copy-menu-content {
+  transform: translateY(0);
+}
+
+.mobile-copy-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.mobile-copy-menu-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mobile-copy-menu-close {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all var(--transition-speed);
+}
+
+.mobile-copy-menu-close:hover {
+  background: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.mobile-copy-menu-body {
+  padding: var(--spacing-sm) 0;
+}
+
+.mobile-copy-menu-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  transition: background-color var(--transition-speed);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 1rem;
+  /* 添加触摸优化 */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 56px; /* 确保足够的触摸区域 */
+}
+
+.mobile-copy-menu-item:hover {
+  background: var(--bg-secondary);
+}
+
+.mobile-copy-menu-item:active {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(0.98);
+  transition: all 0.1s ease;
+}
+
+.mobile-copy-menu-item svg {
+  margin-right: var(--spacing-md);
+  color: var(--primary-color);
+  flex-shrink: 0;
+  transition: color var(--transition-speed);
+}
+
+.mobile-copy-menu-item span {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.mobile-copy-menu-item:active svg,
+.mobile-copy-menu-item:active span {
+  transform: scale(0.95);
+}
+
+/* 添加分隔线样式 */
+.mobile-copy-menu-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 8px 0;
+  opacity: 0.5;
+}
+
+/* 删除按钮危险样式 */
+.mobile-copy-menu-item-danger {
+  color: var(--accent-color);
+}
+
+.mobile-copy-menu-item-danger:hover {
+  background-color: rgba(247, 37, 133, 0.1);
+  color: var(--accent-color);
+}
+
+.mobile-copy-menu-item-danger:active {
+  background-color: rgba(247, 37, 133, 0.2);
+}
+
+body.dark .mobile-copy-menu-backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+body.dark .mobile-copy-menu-content {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+body.dark .mobile-copy-menu-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark .mobile-copy-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark .mobile-copy-menu-item:active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark .mobile-copy-menu-item-danger:hover {
+  background-color: rgba(247, 37, 133, 0.15);
+}
+
+body.dark .mobile-copy-menu-item-danger:active {
+  background-color: rgba(247, 37, 133, 0.25);
+}
+
+body.dark .mobile-copy-menu-divider {
+  background-color: var(--border-color);
+}
+
+/* 优化手机端图片项的交互体验 */
+@media (max-width: 768px) {
+  .gallery-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .gallery-item:active {
+    transform: scale(0.98);
+  }
+  
+  /* 在手机端适当增加点击区域 */
+  .gallery-item {
+    min-height: 48px;
+  }
+  
+  /* 手机端列表视图的复制按钮位置调整 */
+  .gallery-list .mobile-copy-btn {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 8px;
+  }
+}
+
+/* 上传页面格式选择器样式 */
+.upload-format-selector {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  gap: var(--spacing-sm);
+}
+
+.upload-format-selector .option-title {
+  margin-bottom: 0;
+  margin-right: 10px;
+  border-left: none;
+  padding-left: 0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.upload-format-selector .radio-item {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+.upload-format-selector .radio-item label {
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  border-width: 2px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .upload-format-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+    gap: var(--spacing-xs);
+  }
+  
+  .upload-format-selector .option-title {
+    margin-right: 0;
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .upload-format-selector .radio-item {
+    flex: 1;
+    min-width: 100px;
   }
 }

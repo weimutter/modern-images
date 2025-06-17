@@ -13,7 +13,7 @@
       <a href="/" class="logo">现代图床</a>
       <nav class="nav">
         <a href="/gallery" class="btn btn-outline">我的图片库</a>
-        <a href="/api-management" class="btn btn-outline">API管理</a>
+        <a href="/settings" class="btn btn-outline">系统设置</a>
         <button id="toggleDarkMode" class="btn btn-outline">暗色模式</button>
         <a href="/logout" class="btn btn-outline">退出</a>
       </nav>
@@ -24,19 +24,19 @@
     <section class="upload-container">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
         <h2>上传图片</h2>
-        <div class="radio-group format-radio-group" style="margin: 0; display: flex; align-items: center; height: 40px;">
-          <div class="option-title" style="margin-bottom: 0; margin-right: 10px; border-left: none; padding-left: 0;">图片格式:</div>
+        <div class="radio-group format-radio-group upload-format-selector">
+          <div class="option-title">图片格式:</div>
           <div class="radio-item">
             <input type="radio" name="format" value="original" id="format-original" checked>
-            <label for="format-original" style="padding: 6px 12px; min-height: 36px;">原始格式</label>
+            <label for="format-original">原始格式</label>
           </div>
           <div class="radio-item">
             <input type="radio" name="format" value="webp" id="format-webp">
-            <label for="format-webp" style="padding: 6px 12px; min-height: 36px;">转为WebP</label>
+            <label for="format-webp">转为WebP</label>
           </div>
           <div class="radio-item">
             <input type="radio" name="format" value="avif" id="format-avif">
-            <label for="format-avif" style="padding: 6px 12px; min-height: 36px;">转为AVIF</label>
+            <label for="format-avif">转为AVIF</label>
           </div>
         </div>
       </div>
@@ -108,16 +108,55 @@
 
   <script src="/js/main.js"></script>
   <script>
+    // 检查认证状态
+    async function checkAuthStatus() {
+      try {
+        const response = await fetch('/api/auth-status');
+        const data = await response.json();
+        
+        // 如果系统未配置，跳转到设置页面
+        if (!data.isConfigured) {
+          window.location.href = '/setup';
+          return;
+        }
+        
+        // 如果用户未认证，跳转到登录页面
+        if (!data.isAuthenticated) {
+          window.location.href = '/login';
+          return;
+        }
+      } catch (error) {
+        console.error('检查认证状态失败:', error);
+        // 如果检查失败，也跳转到登录页面
+        window.location.href = '/login';
+      }
+    }
+
     // 添加格式选择同步功能
     document.addEventListener('DOMContentLoaded', function() {
+      // 首先检查认证状态
+      checkAuthStatus();
+      
       // 获取所有格式选项和隐藏的格式字段
       const formatRadios = document.querySelectorAll('input[name="format"][type="radio"]');
       const formatValue = document.getElementById('formatValue');
+      
+      // 从localStorage恢复上次的格式选择
+      const savedFormat = localStorage.getItem('uploadFormat');
+      if (savedFormat) {
+        const savedRadio = document.querySelector(`input[name="format"][value="${savedFormat}"]`);
+        if (savedRadio) {
+          savedRadio.checked = true;
+          formatValue.value = savedFormat;
+        }
+      }
       
       // 为每个选项添加事件监听器
       formatRadios.forEach(radio => {
         radio.addEventListener('change', function() {
           formatValue.value = this.value;
+          // 保存用户的选择到localStorage
+          localStorage.setItem('uploadFormat', this.value);
         });
       });
     });

@@ -605,10 +605,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     formData.append('format', selectedFormat);
     
-    // 按照队列顺序添加文件
-    fileQueue.forEach(fileObj => {
-      formData.append('images', fileObj.file);
-    });
+    // 按照队列顺序从后往前添加文件（保持显示顺序与本地一致）
+    for (let i = fileQueue.length - 1; i >= 0; i--) {
+      formData.append('images', fileQueue[i].file);
+    }
     
     // 显示加载状态
     uploadBtn.disabled = true;
@@ -769,7 +769,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
-              <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>
           `;
           toggleGalleryBtn.title = "显示图片";
@@ -929,24 +928,38 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isGridView) {
         item.classList.add('gallery-item-grid');
         
-        // 优化：使用空白图片占位，然后懒加载
+        // 优化：使用空白图片占位，然后懒加载，添加手机端复制按钮
         item.innerHTML = `
           <div class="gallery-img-container">
             <div class="loading-placeholder"></div>
             <img class="gallery-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
                  data-src="${img.url}" alt="${img.filename}" loading="lazy" />
             <div class="filename">${img.filename}</div>
+            <!-- 手机端复制按钮 -->
+            <button class="mobile-copy-btn" data-index="${index}" title="复制链接">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
           </div>
         `;
       } else {
         item.classList.add('gallery-item-list');
         
-        // 优化：使用空白图片占位，然后懒加载
+        // 优化：使用空白图片占位，然后懒加载，添加手机端复制按钮
         item.innerHTML = `
           <div class="gallery-img-container">
             <div class="loading-placeholder"></div>
             <img class="gallery-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
                  data-src="${img.url}" alt="${img.filename}" loading="lazy" />
+            <!-- 手机端复制按钮 -->
+            <button class="mobile-copy-btn" data-index="${index}" title="复制链接">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
           </div>
           <div class="gallery-details">
             <div class="filename">${img.filename}</div>
@@ -986,6 +999,18 @@ document.addEventListener('DOMContentLoaded', () => {
           showImageModal(img);
         }
       });
+      
+      // 手机端复制按钮点击事件
+      const mobileCopyBtn = item.querySelector('.mobile-copy-btn');
+      if (mobileCopyBtn) {
+        mobileCopyBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // 显示手机端复制菜单
+          showMobileCopyMenu(e, img, index);
+        });
+      }
       
       // 右键点击处理：显示上下文菜单
       item.addEventListener('contextmenu', (e) => {
@@ -1197,6 +1222,118 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('备用复制方法失败:', err);
       showToast('复制失败，请手动复制', 'error');
     }
+  }
+
+  // 手机端复制菜单
+  function showMobileCopyMenu(event, img, index) {
+    // 移除已存在的手机端菜单
+    const existingMenu = document.getElementById('mobileCopyMenu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
+    
+    // 创建手机端复制菜单
+    const menu = document.createElement('div');
+    menu.id = 'mobileCopyMenu';
+    menu.className = 'mobile-copy-menu';
+    
+    menu.innerHTML = `
+      <div class="mobile-copy-menu-backdrop"></div>
+      <div class="mobile-copy-menu-content">
+        <div class="mobile-copy-menu-header">
+          <div class="mobile-copy-menu-title">复制图片链接</div>
+          <button class="mobile-copy-menu-close">&times;</button>
+        </div>
+        <div class="mobile-copy-menu-body">
+          <div class="mobile-copy-menu-item" data-action="copyUrl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>复制图片链接</span>
+          </div>
+          <div class="mobile-copy-menu-item" data-action="copyHTML">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span>复制 HTML 代码</span>
+          </div>
+          <div class="mobile-copy-menu-item" data-action="copyMarkdown">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+            </svg>
+            <span>复制 Markdown 代码</span>
+          </div>
+          <div class="mobile-copy-menu-item" data-action="copyForum">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span>复制论坛格式</span>
+          </div>
+          <div class="mobile-copy-menu-item" data-action="openInTab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>在新标签页打开</span>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // 添加事件监听器
+    const closeBtn = menu.querySelector('.mobile-copy-menu-close');
+    const backdrop = menu.querySelector('.mobile-copy-menu-backdrop');
+    const menuItems = menu.querySelectorAll('.mobile-copy-menu-item');
+    
+    // 关闭菜单函数
+    const closeMenu = () => {
+      menu.classList.add('closing');
+      setTimeout(() => {
+        menu.remove();
+      }, 300);
+    };
+    
+    // 关闭按钮和背景点击事件
+    closeBtn.addEventListener('click', closeMenu);
+    backdrop.addEventListener('click', closeMenu);
+    
+    // 菜单项点击事件
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.getAttribute('data-action');
+        
+        switch (action) {
+          case 'copyUrl':
+            copyToClipboard(img.url, '图片链接已复制');
+            break;
+          case 'copyHTML':
+            copyToClipboard(`<img src="${img.url}" alt="${img.filename}" />`, 'HTML代码已复制');
+            break;
+          case 'copyMarkdown':
+            copyToClipboard(`![${img.filename}](${img.url})`, 'Markdown代码已复制');
+            break;
+          case 'copyForum':
+            copyToClipboard(`[img]${img.url}[/img]`, '论坛格式代码已复制');
+            break;
+          case 'openInTab':
+            window.open(img.url, '_blank');
+            showToast('已在新标签页打开图片');
+            break;
+        }
+        
+        closeMenu();
+      });
+    });
+    
+    // 显示菜单动画
+    setTimeout(() => {
+      menu.classList.add('show');
+    }, 10);
   }
 
   // 优化的图片模态框，只显示图片和导航，性能优化
