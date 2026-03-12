@@ -49,30 +49,44 @@ mkdir -p /app/sessions
 mkdir -p /app/backups
 mkdir -p /app/logs
 
+if [ -d /app/config.json ]; then
+  echo "ERROR: /app/config.json is a directory."
+  echo "This usually happens when you bind-mount ./config.json but the host file does not exist."
+  echo "Fix: create a real ./config.json file on the host (e.g. cp config.example.json config.json), then recreate containers."
+  exit 1
+fi
+
 # 创建 config.json 如果不存在
 if [ ! -f /app/config.json ]; then
-  echo "Creating default config.json..."
-  cat > /app/config.json <<EOF
+  if [ -f /app/config.example.json ]; then
+    echo "Creating config.json from config.example.json..."
+    cp /app/config.example.json /app/config.json
+  else
+    echo "Creating default config.json..."
+    cat > /app/config.json <<EOF
 {
-  "username": "",
-  "password": "",
-  "apiTokens": [],
-  "storageType": "local",
+  "auth": {
+    "isConfigured": false,
+    "username": "",
+    "hashedPassword": "",
+    "salt": ""
+  },
+  "api": {
+    "enabled": true,
+    "tokens": [],
+    "defaultFormat": "original"
+  },
+  "storage": {
+    "type": "local"
+  },
   "imageQuality": {
     "webp": 80,
     "avif": 75,
     "pngOptimize": false
-  },
-  "redis": {
-    "enabled": true
-  },
-  "domains": {
-    "allowedDomains": [],
-    "imageDomain": "",
-    "domainSecurityEnabled": false
   }
 }
 EOF
+  fi
 fi
 
 # 设置目录和文件权限（尝试修改权限，如果失败则继续）

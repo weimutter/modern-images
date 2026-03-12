@@ -1,5 +1,5 @@
 # 多阶段构建 - 生产环境优化
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # 安装必要的系统依赖（Sharp 需要）
 RUN apk add --no-cache \
@@ -16,12 +16,11 @@ COPY package*.json ./
 
 # 生产依赖安装阶段
 FROM base AS production-deps
-# 使用 npm install 而不是 npm ci（兼容没有 package-lock.json 的情况）
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm ci --omit=dev --no-audit --no-fund
 
 # 开发依赖安装阶段（如果需要构建步骤）
 FROM base AS build-deps
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 # 最终生产镜像
 FROM base AS production

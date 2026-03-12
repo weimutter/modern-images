@@ -1,0 +1,12 @@
+node_modules
+uploads
+sessions
+logs
+backups
+temp
+.git
+.github
+.idea
+.vscode
+.DS_Store
+npm-debug.log*

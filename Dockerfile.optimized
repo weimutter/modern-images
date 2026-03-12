@@ -1,7 +1,7 @@
 # 多阶段构建 - 生产环境优化（使用 package-lock.json）
 # 使用此 Dockerfile 前，请先运行 ./generate-lockfile.sh 生成 package-lock.json
 
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # 安装必要的系统依赖（Sharp 需要）
 RUN apk add --no-cache \

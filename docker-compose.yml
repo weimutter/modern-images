@@ -12,11 +12,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # 备份目录映射（可选，便于访问数据库备份）
-      - ./backups:/backups
-    ports:
-      # 仅在开发环境暴露端口，生产环境可以注释掉
-      - "${DB_PORT:-5432}:5432"
     networks:
       - image-hosting-network
     healthcheck:
@@ -29,8 +24,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile  # 使用 npm install (兼容无 package-lock.json)
-      # dockerfile: Dockerfile.optimized  # 使用 npm ci (需要 package-lock.json，构建更快更可靠)
+      dockerfile: Dockerfile
       target: production
     container_name: image-hosting-app
     restart: unless-stopped

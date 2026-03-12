@@ -61,7 +61,7 @@ coverage/
 test-results/
 
 # Docker
-.dockerignore
+# .dockerignore
 Dockerfile*
 docker-compose*.yml
 
