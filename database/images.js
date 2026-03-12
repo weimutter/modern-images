@@ -228,20 +228,18 @@ const ImagesMixin = {
     try {
       const client = await this.pool.connect();
       try {
-        const totalQuery = 'SELECT COUNT(*) as count FROM images';
-        const localQuery = 'SELECT COUNT(*) as count FROM images WHERE storage = $1';
-        const r2Query = 'SELECT COUNT(*) as count FROM images WHERE storage = $1';
-
-        const [totalResult, localResult, r2Result] = await Promise.all([
-          client.query(totalQuery),
-          client.query(localQuery, ['local']),
-          client.query(r2Query, ['r2'])
-        ]);
-
+        const query = `
+          SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE storage = 'local') AS local,
+            COUNT(*) FILTER (WHERE storage = 'r2') AS r2
+          FROM images`;
+        const result = await client.query(query);
+        const row = result.rows[0];
         return {
-          total: parseInt(totalResult.rows[0].count),
-          local: parseInt(localResult.rows[0].count),
-          r2: parseInt(r2Result.rows[0].count)
+          total: parseInt(row.total),
+          local: parseInt(row.local),
+          r2: parseInt(row.r2)
         };
       } finally {
         client.release();
@@ -257,20 +255,18 @@ const ImagesMixin = {
     try {
       const client = await this.pool.connect();
       try {
-        const totalQuery = 'SELECT COALESCE(SUM(file_size), 0) AS size FROM images';
-        const localQuery = 'SELECT COALESCE(SUM(file_size), 0) AS size FROM images WHERE storage = $1';
-        const r2Query = 'SELECT COALESCE(SUM(file_size), 0) AS size FROM images WHERE storage = $1';
-
-        const [totalResult, localResult, r2Result] = await Promise.all([
-          client.query(totalQuery),
-          client.query(localQuery, ['local']),
-          client.query(r2Query, ['r2'])
-        ]);
-
+        const query = `
+          SELECT
+            COALESCE(SUM(file_size), 0) AS total,
+            COALESCE(SUM(file_size) FILTER (WHERE storage = 'local'), 0) AS local,
+            COALESCE(SUM(file_size) FILTER (WHERE storage = 'r2'), 0) AS r2
+          FROM images`;
+        const result = await client.query(query);
+        const row = result.rows[0];
         return {
-          total: parseInt(totalResult.rows[0].size),
-          local: parseInt(localResult.rows[0].size),
-          r2: parseInt(r2Result.rows[0].size)
+          total: parseInt(row.total),
+          local: parseInt(row.local),
+          r2: parseInt(row.r2)
         };
       } finally {
         client.release();

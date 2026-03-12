@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { getAllFiles } = require('../utils/file-utils');
 const { getBaseUrl, getImageBaseUrl } = require('../utils/url-utils');
+const { cleanEmptyDirs, invalidateFileSystemCache, removeImageRecord } = require('../utils/upload-helpers');
 
 /**
  * Create database routes with dependency injection
@@ -22,45 +23,9 @@ const { getBaseUrl, getImageBaseUrl } = require('../utils/url-utils');
 function createDatabaseRoutes(isAuthenticated, imageDb, r2StorageService, multer, configLoader) {
   const router = express.Router();
 
-  // Helper function to remove image record
-  async function removeImageRecord(imagePath) {
-    try {
-      const result = await imageDb.removeImage(imagePath);
-      return result;
-    } catch (error) {
-      console.error('从数据库删除图片记录失败:', error);
-      throw error;
-    }
-  }
-
-  // Helper function to clean empty directories
-  function cleanEmptyDirs(dir) {
-    if (fs.existsSync(dir)) {
-      let entries = fs.readdirSync(dir);
-
-      // First, recursively clean subdirectories
-      entries.forEach(entry => {
-        const fullPath = path.join(dir, entry);
-        if (fs.statSync(fullPath).isDirectory()) {
-          cleanEmptyDirs(fullPath);
-        }
-      });
-
-      // Re-check current directory
-      entries = fs.readdirSync(dir);
-      if (entries.length === 0 && dir !== path.join(process.cwd(), 'uploads')) {
-        // Don't delete uploads root directory, only its subdirectories
-        fs.rmdirSync(dir);
-        console.log(`已删除空文件夹: ${dir}`);
-      }
-    }
-  }
-
-  // Helper function to invalidate file system cache
-  function invalidateFileSystemCache() {
-    // This would typically interact with a cache object
-    // For now, it's a no-op as the cache is managed in server.js
-    // The caller should handle cache invalidation if needed
+  function invalidateAppFileSystemCache() {
+    const fsCache = router.app?.locals?.fileSystemCache;
+    invalidateFileSystemCache(fsCache);
   }
 
   // ==================== Database Status & Health ====================
@@ -548,7 +513,7 @@ function createDatabaseRoutes(isAuthenticated, imageDb, r2StorageService, multer
       }
 
       // Clear filesystem cache as migration operation may affect filesystem state
-      invalidateFileSystemCache();
+      invalidateAppFileSystemCache();
 
       res.json({
         success: true,

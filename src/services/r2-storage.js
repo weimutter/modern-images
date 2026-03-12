@@ -58,11 +58,6 @@ class R2StorageService {
       throw new Error('R2客户端未初始化或bucket未配置');
     }
 
-    console.log(`开始上传到R2: ${filename}`);
-    console.log(`文件大小: ${fileBuffer.length} bytes`);
-    console.log(`Bucket: ${process.env.R2_BUCKET}`);
-    console.log(`Endpoint: ${process.env.R2_ENDPOINT}`);
-
     const uploadParams = {
       Bucket: process.env.R2_BUCKET,
       Key: filename,
@@ -70,17 +65,9 @@ class R2StorageService {
       ContentType: getContentType(filename),
     };
 
-    console.log(`上传参数:`, {
-      Bucket: uploadParams.Bucket,
-      Key: uploadParams.Key,
-      ContentType: uploadParams.ContentType,
-      BodySize: uploadParams.Body.length
-    });
-
     try {
       const command = new PutObjectCommand(uploadParams);
-      const result = await this.client.send(command);
-      console.log(`R2上传成功:`, result);
+      await this.client.send(command);
 
       // 构建文件URL
       let fileUrl;
@@ -94,7 +81,7 @@ class R2StorageService {
         fileUrl = `https://${process.env.R2_BUCKET}.${endpointHost}/${filename}`;
       }
 
-      console.log(`生成的文件URL: ${fileUrl}`);
+      console.log(`R2上传完成: ${filename}`);
       return fileUrl;
     } catch (error) {
       console.error(`R2上传失败:`, error);

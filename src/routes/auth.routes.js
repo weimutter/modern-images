@@ -3,11 +3,60 @@ const path = require('path');
 const { generateSalt, hashPassword } = require('../utils/password');
 
 /**
+ * 简易登录速率限制器
+ * 同一 IP 在 windowMs 内最多允许 maxAttempts 次失败尝试
+ */
+class LoginRateLimiter {
+  constructor({ maxAttempts = 5, windowMs = 15 * 60 * 1000 } = {}) {
+    this.maxAttempts = maxAttempts;
+    this.windowMs = windowMs;
+    this.attempts = new Map(); // ip -> { count, firstAttempt }
+    // 每 5 分钟清理过期记录
+    this.cleanupTimer = setInterval(() => this._cleanup(), 5 * 60 * 1000);
+    this.cleanupTimer.unref();
+  }
+
+  _cleanup() {
+    const now = Date.now();
+    for (const [ip, record] of this.attempts) {
+      if (now - record.firstAttempt > this.windowMs) {
+        this.attempts.delete(ip);
+      }
+    }
+  }
+
+  isBlocked(ip) {
+    const record = this.attempts.get(ip);
+    if (!record) return false;
+    if (Date.now() - record.firstAttempt > this.windowMs) {
+      this.attempts.delete(ip);
+      return false;
+    }
+    return record.count >= this.maxAttempts;
+  }
+
+  recordFailure(ip) {
+    const now = Date.now();
+    const record = this.attempts.get(ip);
+    if (!record || now - record.firstAttempt > this.windowMs) {
+      this.attempts.set(ip, { count: 1, firstAttempt: now });
+    } else {
+      record.count++;
+    }
+  }
+
+  reset(ip) {
+    this.attempts.delete(ip);
+  }
+}
+
+/**
  * 认证相关路由
  */
 function createAuthRoutes(configLoader, checkInitialSetup) {
   const router = express.Router();
   const config = configLoader.getConfig();
+  const loginLimiter = new LoginRateLimiter({ maxAttempts: 5, windowMs: 15 * 60 * 1000 });
 
   // 初始设置页面
   router.get('/setup', (req, res) => {
@@ -56,10 +105,20 @@ function createAuthRoutes(configLoader, checkInitialSetup) {
 
   // 登录处理
   router.post('/login', checkInitialSetup, (req, res) => {
+    const clientIp = req.ip;
+
+    // 检查是否被速率限制
+    if (loginLimiter.isBlocked(clientIp)) {
+      console.warn(`登录速率限制触发: IP=${clientIp}`);
+      return res.status(429).json({ success: false, message: '登录尝试过于频繁，请15分钟后再试' });
+    }
+
     const { username, password, rememberMe } = req.body;
     const hashedPwd = hashPassword(password, config.auth.salt);
 
     if (username === config.auth.username && hashedPwd === config.auth.hashedPassword) {
+      // 登录成功，清除失败记录
+      loginLimiter.reset(clientIp);
       req.session.authenticated = true;
 
       // 根据用户选择设置 session 过期时间
@@ -75,6 +134,8 @@ function createAuthRoutes(configLoader, checkInitialSetup) {
 
       return res.json({ success: true });
     } else {
+      // 登录失败，记录失败次数
+      loginLimiter.recordFailure(clientIp);
       return res.status(401).json({ success: false, message: '用户名或密码错误' });
     }
   });

@@ -31,7 +31,7 @@ class ImageDatabase {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 10;
     this.reconnectDelay = 10000;
-    this.init();
+    this.isInitialized = false;
   }
 
   async init() {
@@ -65,6 +65,14 @@ class ImageDatabase {
 
       throw error;
     }
+  }
+
+  /**
+   * 快捷方法：判断数据库是否已连接
+   * @returns {boolean}
+   */
+  isConnected() {
+    return this.isInitialized && !this.connectionFailed && this.pool !== null;
   }
 }
 

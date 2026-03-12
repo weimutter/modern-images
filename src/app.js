@@ -74,7 +74,8 @@ function createApp(dependencies) {
   }
 
   // 信任代理，支持反向代理（Nginx、Cloudflare等）
-  app.set('trust proxy', true);
+  // 设为 1 表示仅信任第一层代理，防止 X-Forwarded-* 头被伪造
+  app.set('trust proxy', parseInt(process.env.TRUST_PROXY) || 1);
 
   // 请求超时和内存监控中间件
   app.use(requestTimeout);
@@ -135,7 +136,8 @@ function createApp(dependencies) {
   const upload = multer({
     storage: storage,
     limits: {
-      fieldSize: 1024 * 1024 // 限制表单字段值最大1MB
+      fieldSize: 1024 * 1024, // 限制表单字段值最大1MB
+      fileSize: 20 * 1024 * 1024 // 限制单个文件最大20MB
     },
     fileFilter: (req, file, cb) => {
       const allowedMimetypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];

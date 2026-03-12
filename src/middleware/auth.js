@@ -2,6 +2,19 @@
  * 认证中间件模块
  */
 
+const crypto = require('crypto');
+
+/**
+ * 常量时间字符串比较，防止时序攻击
+ */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 /**
  * 鉴权中间件，检测用户是否登录
  */
@@ -29,7 +42,7 @@ function createApiAuthMiddleware(config) {
       return res.status(403).json({ success: false, message: 'API功能未启用' });
     }
 
-    const validToken = config.api.tokens.find(t => t.token === token);
+    const validToken = config.api.tokens.find(t => safeEqual(t.token, token));
     if (!validToken) {
       return res.status(401).json({ success: false, message: '无效的API令牌' });
     }

@@ -146,8 +146,11 @@ function createDomainSecurityMiddleware(imageDb) {
       next();
     } catch (error) {
       console.error('域名安全验证出错:', error);
-      // 出错时允许通过，避免阻塞正常访问
-      next();
+      // 安全策略：出错时拒绝请求（fail-closed），防止安全绕过
+      return res.status(500).json({
+        success: false,
+        message: '域名安全验证服务暂时不可用'
+      });
     }
   };
 }

@@ -9,6 +9,7 @@ const fs = require('fs');
 const { getBaseUrl, getImageBaseUrl } = require('../utils/url-utils');
 const { getAllFiles } = require('../utils/file-utils');
 const { getImageDomainConfig } = require('../config/db-config-helper');
+const { cleanEmptyDirs, invalidateFileSystemCache: invalidateCache, removeImageRecord } = require('../utils/upload-helpers');
 
 /**
  * 创建图片路由
@@ -38,46 +39,7 @@ function createImagesRouter(dependencies) {
    * 清除文件系统缓存
    */
   function invalidateFileSystemCache() {
-    fsCache.lastScan = 0;
-    fsCache.files = [];
-  }
-
-  /**
-   * 递归清理空文件夹
-   */
-  function cleanEmptyDirs(dir) {
-    if (fs.existsSync(dir)) {
-      let entries = fs.readdirSync(dir);
-
-      // 先递归清理子目录
-      entries.forEach(entry => {
-        const fullPath = path.join(dir, entry);
-        if (fs.statSync(fullPath).isDirectory()) {
-          cleanEmptyDirs(fullPath);
-        }
-      });
-
-      // 重新检查当前目录
-      entries = fs.readdirSync(dir);
-      if (entries.length === 0 && dir !== path.join(process.cwd(), 'uploads')) {
-        // 不删除uploads根目录，只删除其子目录
-        fs.rmdirSync(dir);
-        console.log(`已删除空文件夹: ${dir}`);
-      }
-    }
-  }
-
-  /**
-   * 删除图片记录
-   */
-  async function removeImageRecord(imagePath) {
-    try {
-      const result = await imageDb.removeImage(imagePath);
-      return result;
-    } catch (error) {
-      console.error('从数据库删除图片记录失败:', error);
-      throw error;
-    }
+    invalidateCache(fsCache);
   }
 
   /**
@@ -99,13 +61,13 @@ function createImagesRouter(dependencies) {
       const uploadsDir = path.join(process.cwd(), 'uploads');
       if (fs.existsSync(uploadsDir)) {
         const uploadedFiles = getAllFiles(uploadsDir, [], fsCache);
-        uploadedFiles.forEach(filePath => {
-          const stats = fs.statSync(filePath);
+        for (const filePath of uploadedFiles) {
           const relativePath = path.relative(uploadsDir, filePath);
           const normalizedPath = relativePath.replace(/\\/g, '/');
 
           // 只添加未在数据库中记录的图片
           if (!recordedPaths.has(normalizedPath)) {
+            const stats = await fs.promises.stat(filePath);
             const filename = path.basename(filePath);
             const imageUrl = `${imageBaseUrl}/i/${normalizedPath}`;
 
@@ -121,7 +83,7 @@ function createImagesRouter(dependencies) {
               markdownCode: `![${filename}](${imageUrl})`
             });
           }
-        });
+        }
       }
     }
 
@@ -287,9 +249,10 @@ function createImagesRouter(dependencies) {
 
         if (image.storage === 'local') {
           const filePath = path.join(process.cwd(), 'uploads', image.path);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          } else {
+          try {
+            await fs.promises.unlink(filePath);
+          } catch (err) {
+            if (err.code !== 'ENOENT') throw err;
             console.warn("文件不存在: ", filePath);
           }
         } else if (image.storage === 'r2') {
@@ -302,7 +265,7 @@ function createImagesRouter(dependencies) {
         }
 
         // 从图片记录中删除
-        await removeImageRecord(image.path);
+        await removeImageRecord(imageDb, image.path);
       }
 
       // 在删除图片后清理空文件夹

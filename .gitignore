@@ -1,7 +1,6 @@
 # 依赖
 node_modules/
 npm-debug.log*
-package-lock.json
 
 # 环境变量
 .env
@@ -27,6 +26,12 @@ sessions/
 *.db
 *.sqlite
 *.sqlite3
+
+# 配置文件（可能含敏感信息：密码哈希、API令牌等）
+config.json
+
+# 示例配置（应提交）
+!config.example.json
 
 # 备份文件
 backups/
@@ -66,3 +71,4 @@ docker-compose*.yml
 # 其他
 *.tgz
 *.tar.gz
+.ace-tool/

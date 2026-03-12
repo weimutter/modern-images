@@ -13,8 +13,13 @@ class SessionStoreService {
    * 获取session配置
    */
   getSessionConfig() {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET 环境变量未设置，生产环境必须配置安全的 Session 密钥');
+    }
+
     const sessionConfig = {
-      secret: process.env.SESSION_SECRET || 'somesecret_please_change_in_production',
+      secret: secret || 'dev-only-secret-' + require('crypto').randomBytes(16).toString('hex'),
       resave: false,
       saveUninitialized: false,
       cookie: {

@@ -9,25 +9,6 @@ const { spawn } = require('child_process');
 const ConnectionMixin = {
   getDefaultConfig() {
     const envConfig = this.getDefaultPostgreSQLConfig();
-
-    console.log('环境变量检查:', {
-      DB_HOST: process.env.DB_HOST ? '✓' : '✗ (使用默认值)',
-      DB_PORT: process.env.DB_PORT ? '✓' : '✗ (使用默认值)',
-      DB_NAME: process.env.DB_NAME ? '✓' : '✗ (使用默认值)',
-      DB_USER: process.env.DB_USER ? '✓' : '✗ (使用默认值)',
-      DB_PASSWORD: process.env.DB_PASSWORD ? '✓' : '✗ (使用默认值)'
-    });
-
-    console.log('使用环境变量数据库配置');
-    console.log('数据库配置:', {
-      host: envConfig.host,
-      port: envConfig.port,
-      database: envConfig.database,
-      user: envConfig.user,
-      ssl: envConfig.ssl,
-      passwordSet: envConfig.password !== 'your_password_here'
-    });
-
     return envConfig;
   },
 
@@ -78,10 +59,13 @@ const ConnectionMixin = {
   startReconnect() {
     if (this.reconnectInterval) {
       clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
     }
 
     this.reconnectAttempts = 0;
     console.log('启动数据库自动重连机制');
+
+    const currentDelay = this.reconnectDelay;
 
     this.reconnectInterval = setInterval(async () => {
       if (!this.connectionFailed) {
@@ -110,15 +94,20 @@ const ConnectionMixin = {
         console.error(`数据库重连失败 (第 ${this.reconnectAttempts} 次):`, error.message);
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          clearInterval(this.reconnectInterval);
-          const longerDelay = this.reconnectDelay * 3;
-          console.log(`达到最大重试次数 (${this.maxReconnectAttempts})，增加重连间隔至 ${longerDelay/1000} 秒`);
+          // 达到最大重试次数，增加间隔后重新开始
+          this.stopReconnect();
+          const longerDelay = currentDelay * 3;
+          console.log(`达到最大重试次数 (${this.maxReconnectAttempts})，${longerDelay/1000} 秒后以更长间隔重试`);
 
-          this.reconnectInterval = setInterval(this.startReconnect.bind(this), longerDelay);
-          this.reconnectAttempts = 0;
+          setTimeout(() => {
+            if (this.connectionFailed) {
+              this.reconnectDelay = longerDelay;
+              this.startReconnect();
+            }
+          }, longerDelay);
         }
       }
-    }, this.reconnectDelay);
+    }, currentDelay);
   },
 
   stopReconnect() {
@@ -208,7 +197,7 @@ const ConnectionMixin = {
 
       child.on('close', (code) => {
         clearTimeout(timeout);
-        resolve(code !== null);
+        resolve(code === 0);
       });
 
       child.on('error', () => {
