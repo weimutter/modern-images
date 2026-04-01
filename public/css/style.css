@@ -400,9 +400,11 @@ a:hover {
   box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.3);
 }
 
-/* 隐藏重置和上传按钮 */
 .action-buttons {
-  display: none;
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+  align-items: center;
 }
 
 /* 重新设计的预览区域 - 网格布局 */
